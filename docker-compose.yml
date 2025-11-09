@@ -1,0 +1,45 @@
+services:
+  # 1. Layanan Database (PostgreSQL)
+  db:
+    image: postgres:15-alpine # Menggunakan image resmi Postgres
+    container_name: portal_db
+    restart: always
+    environment:
+      # Anda bisa ganti ini, tapi harus SAMA dengan di backend
+      POSTGRES_USER: salesuser
+      POSTGRES_PASSWORD: salespassword
+      POSTGRES_DB: sales_portal_db
+    ports:
+      - "5432:5432" # Membuka port DB ke komputer Anda (opsional, untuk debug)
+    volumes:
+      - pgdata:/var/lib/postgresql/data # Agar data DB tidak hilang saat container mati
+
+  # 2. Layanan Backend (Express.js)
+  backend:
+    build: ./backend # Mengarah ke folder /backend untuk mencari Dockerfile
+    container_name: portal_backend
+    ports:
+      - "8000:8000" # Membuka port 8000 ke komputer Anda
+    environment:
+      # INI KUNCINYA: Menghubungkan backend ke DB
+      # 'db' adalah nama service di atas
+      DATABASE_URL: "postgresql://salesuser:salespassword@db:5432/sales_portal_db"
+    depends_on:
+      - db # Bilang ke Docker: "Tunggu DB nyala dulu baru nyalakan backend"
+
+  # 3. Layanan Frontend (Next.js)
+  frontend:
+    build: ./frontend # Mengarah ke folder /frontend untuk mencari Dockerfile
+    container_name: portal_frontend
+    ports:
+      - "3001:3000" # Membuka port 3000 ke komputer Anda
+    environment:
+      # Memberitahu Next.js di mana API backend berada
+      # Dari kacamata browser user, backend ada di 'localhost' port 8000
+      NEXT_PUBLIC_API_URL: "http://localhost:8000/api"
+    depends_on:
+      - backend # Bilang ke Docker: "Tunggu backend nyala dulu baru nyalakan frontend"
+
+# Mendefinisikan volume yang kita sebut di atas
+volumes:
+  pgdata:

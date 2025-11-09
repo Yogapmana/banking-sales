@@ -1,0 +1,86 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String
+  password  String   // Hashed via bcrypt 
+  role      UserRole
+  callLogs  CallLog[]
+}
+
+enum UserRole {
+  SALES
+  MANAGER
+  ADMIN
+}
+
+model Customer {
+  id          Int      @id @default(autoincrement())
+  // Data dari dataset (age, job, marital, etc.) [cite: 94]
+  age         Int
+  job         String
+  marital     String
+  education   String
+  default     String
+  balance     Int
+  housing     String
+  loan        String
+  contact     String
+  day         Int
+  month       String
+  campaign    Int
+  pdays       Int
+  previous    Int
+  poutcome    String
+  empVarRate  Float
+  consPriceIdx Float
+  consConfIdx Float
+  euribor3m   Float
+  nrEmployed  Float
+  // Info tambahan
+  name        String? // Dibuat saat import
+  phoneNumber String? // Dibuat saat import
+
+  leadScore LeadScore?
+  callLogs  CallLog[]
+  tasks     Task[]
+}
+
+model LeadScore {
+  id          Int       @id @default(autoincrement())
+  customer    Customer  @relation(fields: [customerId], references: [id])
+  customerId  Int       @unique
+  score       Float     // Skor probabilitas 0-1
+  reason      String?   // Alasan ringkas 
+}
+
+model CallLog {
+  id          Int       @id @default(autoincrement())
+  customer    Customer  @relation(fields: [customerId], references: [id])
+  customerId  Int
+  user        User      @relation(fields: [userId], references: [id])
+  userId      Int
+  createdAt   DateTime  @default(now())
+  status      String    // "Tersambung", "Tidak Diangkat" [cite: 8]
+  result      String    // "Tidak Tertarik", "Tertarik", dll 
+  notes       String    // Catatan wajib 
+}
+
+model Task {
+  id          Int       @id @default(autoincrement())
+  customer    Customer  @relation(fields: [customerId], references: [id])
+  customerId  Int
+  dueTime     DateTime  // Waktu reminder 
+  description String
+  isComplete  Boolean   @default(false)
+}
